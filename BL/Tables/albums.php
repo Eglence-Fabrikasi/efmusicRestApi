@@ -78,8 +78,6 @@ class albums extends TableItem {
 	function getAlbumsbyUPC ($customerID, $UPC) {
 		$sql = "call getAlbumsbyUPC($customerID,'".$UPC."')";
 		return $this->executenonquery($sql,true);
-
-
 	}
 	function getAlbumsbyID ($userID, $customerID,$albumID) {
 		$sql = "call getAlbumsbyID($userID, $customerID,'".$albumID."')";
