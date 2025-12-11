@@ -13,8 +13,6 @@ class albumIDMaster extends TableItem {
 	public $userID;
 	public $date_;
 
-
-
 	// Counctructor
 	function __construct($ID = NULL) {
 		parent::__construct ();
