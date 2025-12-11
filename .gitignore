@@ -1,0 +1,22 @@
+/vendor/
+composer.lock
+Library/
+unix/    
+uploads/
+Process/
+keys/
+
+# Cache
+*.cache
+cache/
+storage/
+
+# System
+.DS_Store
+.settings
+.vscode/
+
+
+# Env
+.env
+.env.*

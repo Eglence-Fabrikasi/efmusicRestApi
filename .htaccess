@@ -1,0 +1,18 @@
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule V1/(.*)$ V1/index.php [QSA,L]
+RewriteRule Payment/paymentOK Payment/paymentOK.php [QSA,L]
+RewriteRule Payment/paymentCancel Payment/paymentCancel.php [QSA,L]
+
+#RewriteCond %{REQUEST_FILENAME} !^(/Process/delivery.php)
+#RewriteCond %{REQUEST_FILENAME} !^(/Process/test.php)
+#RewriteCond %{REMOTE_ADDR} !^127\.0\.0\.2
+#RewriteRule ^(.*)$ - [R=403,L]
+
+#RewriteCond %{REMOTE_ADDR} !^213\.74\.31\.175
+#RewriteCond %{REQUEST_FILENAME} !^/Process/test.php
+#RewriteRule .* Process/test.php
+#RewriteRule ^(.*)$ - [R=403,L]
+
+

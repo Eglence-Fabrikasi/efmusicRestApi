@@ -1,0 +1,12 @@
+{
+    "require": {
+        "google/cloud-storage": "^1.30",
+        "slim/slim": "^4.3",
+        "slim/psr7": "^0.6.0",
+        "guzzlehttp/guzzle": "^6.5",
+        "firebase/php-jwt": "^6.4",
+        "tuupola/slim-basic-auth": "^3.3",
+        "monolog/monolog": "^1.27",
+        "vlucas/phpdotenv": "^5.5"
+    }
+}
