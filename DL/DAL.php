@@ -1,4 +1,5 @@
 <?php
+
 namespace data;
 
 use \db;
@@ -37,7 +38,7 @@ class DAL
             $conn = new mysqli(db::Server, $_ENV["DB_USER"], $_ENV["DB_PASS"], $this->getdbName(), db::PortNumber, db::Socket);
             $this->con = $conn;
             mysqli_query($conn, "SET NAMES UTF8");
-            
+
             if ($this->getdbName() != "") {
                 $databaseName = $this->getdbName();
             } else {
@@ -74,7 +75,7 @@ class DALProsess extends DAL
     public $toJson;
 
     function __construct()
-    
+
     {
         parent::__construct();
     }
@@ -114,12 +115,12 @@ class DALProsess extends DAL
         if (is_resource($this->con)) {
             $this->closeCon();
         }
-        
+
         $this->openCon();
         // echo $sql;
-        $result = mysqli_query($this->con, $sql) or die("Query error: ".$sql." ". mysqli_errno() . ":" . mysqli_error());
+        $result = mysqli_query($this->con, $sql) or die("Query error: " . $sql . " " . mysqli_errno() . ":" . mysqli_error());
         $this->closeCon();
-        
+
         if (! $result) {
             return mysqli_errno($this->con) . ":" . mysqli_error($this->con);
         } else {
@@ -128,18 +129,16 @@ class DALProsess extends DAL
             } else {
                 $this->recordCount = 0;
             }
-            if ($toJson==true) {
-                
+            if ($toJson == true) {
+
                 //$arr=array();
-               
+
                 /*while($row=mysqli_fetch_assoc($result)) {
                     $arr[] =$row;
                 }
                 */
                 $arr = $result->fetch_all(MYSQLI_ASSOC);
-                $this->toJson=json_encode($arr);
-               
-
+                $this->toJson = json_encode($arr);
             }
             return $result;
         }
@@ -177,19 +176,19 @@ class DALProsess extends DAL
             unset($colm);
         }
         $sonuc = '[' . implode(',', $rec) . ']';
-        
+
         return $sonuc;
     }
 }
 
 class TableItem extends DALProsess
 {
-    
+
     // properties
     public $table;
 
     function __construct()
-    
+
     {
         parent::__construct();
     }
@@ -208,7 +207,7 @@ class TableItem extends DALProsess
     {
         return $this->table;
     }
-    
+
     // methods
     public function refresh($ID)
     {
@@ -217,7 +216,7 @@ class TableItem extends DALProsess
             $this->openCon();
             $query = mysqli_query($this->con, $sql) or die("Query error: " . mysqli_error($this->con));
             $this->closeCon();
-            
+
             $result = mysqli_fetch_array($query);
             if ($result) {
                 foreach ($result as $name => $value) {
@@ -233,7 +232,7 @@ class TableItem extends DALProsess
             $this->openCon();
             $query = mysqli_query($this->con, $sql) or die("Query error: " . mysqli_error($this->con));
             $this->closeCon();
-            
+
             $result = mysqli_fetch_array($query);
             if ($result) {
                 foreach ($result as $name => $value) {
@@ -259,43 +258,49 @@ class TableItem extends DALProsess
 
     public function save()
     {
-        $userID = userID ?? 0;        
+
         //$userID = (isset($_SESSION['userID']) ? $_SESSION['userID'] : 0);
         /*
          * if ($userID==0 && $this->table!='users') { //http_redirect("../Masters/mainLayout.php?menuID=4", array("name" => "value"), true, HTTP_REDIRECT_PERM); $this->redirectUrl("../Masters/mainLayout.php?menuID=4"); exit; }
          */
         $this->openCon();
         $classitems = get_object_vars($this);
+
+        if (array_key_exists('userID', $classitems)) {
+           $userID = $classitems['userID'];
+        } else {
+             $userID =0;
+        }
         $lastInsert = 0;
         $vars = NULL;
 
         if (! is_numeric($this->ID) || $this->ID == 0) {
-            
+
             $sql = "insert into " . $this->table . " (";
-            foreach ($classitems as $key => $val) {                
-                if ($key !== 'ID' && $key !== 'id' && $key !== 'table' && $key !== 'dbName' && $key !== 'con' && $key !== 'recordCount' && $key !== 'toJson' && $key !== 'token' && ! is_numeric($key) && $key!="")
+            foreach ($classitems as $key => $val) {
+                if ($key !== 'ID' && $key !== 'id' && $key !== 'table' && $key !== 'dbName' && $key !== 'con' && $key !== 'recordCount' && $key !== 'toJson' && $key !== 'token' && ! is_numeric($key) && $key != "")
                     $sql .= $key . ',';
             }
             $sql = substr($sql, 0, strlen($sql) - 1);
             $sql .= ') VALUES (';
-            foreach ($classitems as $key => $val) {                
-                if ($key !== 'ID' && $key !== 'id' && $key !== 'table' && $key !== 'dbName' && $key !== 'con' && $key !== 'recordCount' && $key !== 'toJson' && $key !== 'token' && ! is_numeric($key) && $key!="") {
+            foreach ($classitems as $key => $val) {
+                if ($key !== 'ID' && $key !== 'id' && $key !== 'table' && $key !== 'dbName' && $key !== 'con' && $key !== 'recordCount' && $key !== 'toJson' && $key !== 'token' && ! is_numeric($key) && $key != "") {
                     if ($key == 'updated' || $key == 'created' || $key == 'date_') {
                         $sql .= "now(),";
                     } elseif ($key == 'isDeleted') {
                         $sql .= "0,";
                     } elseif (strpos($key, 'userID') !== false) {
-                        $sql .= $userID.",";
+                        $sql .= $userID . ",";
                     } elseif (strpos($key, 'createdBy') !== false) {
-                        $sql .= $userID.",";
-                    }elseif (strpos($key, 'date_') !== false) {
+                        $sql .= $userID . ",";
+                    } elseif (strpos($key, 'date_') !== false) {
                         $sql .= "now(),";
-                    } elseif ($key=='ean')  {
-                       	$sql .= "'" . @mysqli_real_escape_string($this->con, is_null($val) ? "NULL" : $val) . "',";
+                    } elseif ($key == 'ean') {
+                        $sql .= "'" . @mysqli_real_escape_string($this->con, is_null($val) ? "NULL" : $val) . "',";
                     } elseif (strpos($key, 'by_') !== false) {
-                        $sql .= (isset($_SESSION['userID']) ? $_SESSION['userID'] : 0) . ",";
+                        $sql .= $userID . ",";
                     } else {
-                        if (is_numeric($val) && strpos($val,'e')===false) {
+                        if (is_numeric($val) && strpos($val, 'e') === false) {
                             $sql .= str_replace("'on'", "True", str_replace("'NULL'", "NULL", mysqli_real_escape_string($this->con, is_null($val) ? "NULL" : $val))) . ",";
                         } else {
                             $sql .= str_replace("'on'", "True", str_replace("'NULL'", "NULL", "'" . mysqli_real_escape_string($this->con, (is_null($val) ? "NULL" : $val)) . "'")) . ",";
@@ -304,28 +309,28 @@ class TableItem extends DALProsess
                 }
             }
             $sql = substr($sql, 0, strlen($sql) - 1);
-            $sql = str_replace('primary','`primary`',$sql);
+            $sql = str_replace('primary', '`primary`', $sql);
             $sql .= ')';
         } else {
-            $sql = "update " . $this->table . " set ";            
-            foreach ($classitems as $key => $val) {                
-                if ($key !== 'ID' && $key !== 'id' && $key !== 'table' && $key !== 'dbName' && $key !== 'con' && $key !== 'recordCount' && $key !== 'toJson' && $key !== 'token' && ! is_numeric($key) && $key!="") {
-                    if (! is_null($val) || $key == 'updated' || $key == 'isDeleted' || strpos($key, 'date_') == true || strpos($key, 'by_') == true || $key=='ean') {
+            $sql = "update " . $this->table . " set ";
+            foreach ($classitems as $key => $val) {
+                if ($key !== 'ID' && $key !== 'id' && $key !== 'table' && $key !== 'dbName' && $key !== 'con' && $key !== 'recordCount' && $key !== 'toJson' && $key !== 'token' && ! is_numeric($key) && $key != "") {
+                    if (! is_null($val) || $key == 'updated' || $key == 'isDeleted' || strpos($key, 'date_') == true || strpos($key, 'by_') == true || $key == 'ean') {
                         $sql .= $key . '=';
                         if ($key == 'updated' || $key == 'created') {
                             $sql .= "now(),";
                         } elseif ($key == 'isDeleted') {
-                            $sql .= str_replace("'NULL'", "NULL", mysqli_real_escape_string($this->con, is_null($val) ? "NULL" : $val)).","; //isDeleted her zaman sıfır atiyordu
+                            $sql .= str_replace("'NULL'", "NULL", mysqli_real_escape_string($this->con, is_null($val) ? "NULL" : $val)) . ","; //isDeleted her zaman sıfır atiyordu
                         } elseif (strpos($key, 'userID') !== false && $this->table != 'contents') {
-                            $sql .= $userID.",";
+                            $sql .= $userID . ",";
                         } elseif (strpos($key, 'date_') !== FALSE) {
                             $sql .= "now(),";
-                        } elseif ($key=='ean')  {
-                           	$sql .= "'" . mysqli_real_escape_string($this->con, is_null($val) ? "NULL" : $val) . "',";
+                        } elseif ($key == 'ean') {
+                            $sql .= "'" . mysqli_real_escape_string($this->con, is_null($val) ? "NULL" : $val) . "',";
                         } elseif (strpos($key, 'by_') !== FALSE) {
-                            $sql .= (isset($_SESSION['userID']) ? $_SESSION['userID'] : 0) . ",";
+                            $sql .= $userID . ",";
                         } else {
-                            if (is_numeric($val) && strpos($val,'e')===false) {
+                            if (is_numeric($val) && strpos($val, 'e') === false) {
                                 $sql .= str_replace("'on'", "True", str_replace("'NULL'", "NULL", mysqli_real_escape_string($this->con, is_null($val) ? "NULL" : $val))) . ",";
                             } else {
                                 $sql .= str_replace("'on'", "True", str_replace("'NULL'", "NULL", "'" . mysqli_real_escape_string($this->con, is_null($val) ? "NULL" : $val) . "'")) . ",";
@@ -341,9 +346,9 @@ class TableItem extends DALProsess
                 }
             }
             $sql = substr($sql, 0, strlen($sql) - 1);
-            
+
             $sql = $sql . $sqlwhere;
-            $sql = str_replace('primary','`primary`',$sql);
+            $sql = str_replace('primary', '`primary`', $sql);
         }
         try {
             //echo $sql;
@@ -351,9 +356,9 @@ class TableItem extends DALProsess
             
             if (! mysqli_query($this->con, $sql)) {
                 //mysqli_query($this->con, $sql) or die("Query error: " . mysqli_error($this->con));
-                $lastInsert=-1;
+                $lastInsert = -1;
             } else {
-                
+
                 if (substr($sql, 0, 6) == "insert") {
                     $operation = 1;
                     $lastInsert = mysqli_insert_id($this->con);
@@ -367,9 +372,9 @@ class TableItem extends DALProsess
             return $lastInsert;
         } catch (\Exception $error) {
             echo "Hata " . $error;
-            $lastInsert=0;
+            $lastInsert = 0;
         }
-        $arr[] =$lastInsert;
+        $arr[] = $lastInsert;
         return json_encode($arr);
     }
 
@@ -378,35 +383,35 @@ class TableItem extends DALProsess
         if (function_exists('com_create_guid')) {
             return com_create_guid();
         } else {
-            mt_srand((double) microtime() * 10000); // optional for php 4.2.0 and up.
+            mt_srand((float) microtime() * 10000); // optional for php 4.2.0 and up.
             $charid = strtoupper(md5(uniqid(rand(), true)));
             $hyphen = chr(45); // "-"
             $uuid = "" .             // "{"
-            substr($charid, 0, 8) . $hyphen . substr($charid, 8, 4) . $hyphen . substr($charid, 12, 4) . $hyphen . substr($charid, 16, 4) . $hyphen . substr($charid, 20, 12) . ""; // "}"
+                substr($charid, 0, 8) . $hyphen . substr($charid, 8, 4) . $hyphen . substr($charid, 12, 4) . $hyphen . substr($charid, 16, 4) . $hyphen . substr($charid, 20, 12) . ""; // "}"
             return $uuid;
         }
     }
 
     public function delete($force = 0)
     {
-        
-            if ($force == 1) {
-                $sql = "delete from " . $this->table . " where " . key($this) . "=" . $this->ID;
-            } else {
-                $sql = "update " . $this->table . " set isDeleted=1 where " . key($this) . "=" . $this->ID;
-            }
-            try {
-                // echo $sql;
-                $this->openCon();
-                mysqli_query($this->con, $sql);
-                $this->closeCon();
-                
-                $this->history($this->ID, 3);
-                return true;
-            } catch (\Exception $error) {
-                echo "Hata " . $error;
-                return false;
-            }
+
+        if ($force == 1) {
+            $sql = "delete from " . $this->table . " where ID=" . $this->ID;
+        } else {
+            $sql = "update " . $this->table . " set isDeleted=1 where ID=" . $this->ID;
+        }
+        try {
+            echo $sql;
+            $this->openCon();
+            mysqli_query($this->con, $sql);
+            $this->closeCon();
+
+            $this->history($this->ID, 3);
+            return true;
+        } catch (\Exception $error) {
+            echo "Hata " . $error;
+            return false;
+        }
     }
 
     public function deleteAll()
@@ -418,7 +423,7 @@ class TableItem extends DALProsess
                 $this->openCon();
                 mysqli_query($this->con, $sql);
                 $this->closeCon();
-                
+
                 return true;
             } catch (\Exception $error) {
                 echo "Hata " . $error;
@@ -437,7 +442,7 @@ class TableItem extends DALProsess
             $this->openCon();
             mysqli_query($this->con, $sqlhist);
             $this->closeCon();
-            
+
             return true;
         } catch (\Exception $error) {
             echo "Hata " . $error;
@@ -449,10 +454,8 @@ class TableItem extends DALProsess
     {
         $sql = "select count(*) from " . $this->table;
         $count = $this->executenonquery($sql);
-        
+
         $result = mysqli_fetch_array($count);
         return $result;
     }
 }
-
-?>

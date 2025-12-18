@@ -1,6 +1,8 @@
 <?php
 require_once dirname ( dirname ( dirname ( __FILE__ ) ) ) . "/DL/DAL.php";
 use data\TableItem;
+#[\AllowDynamicProperties]
+
 class communicationLogs extends TableItem {
 	// fields
 	public $ID;

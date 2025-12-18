@@ -15,7 +15,7 @@
 //ini_set('display_errors', 1);
 //ini_set('display_startup_errors', 1);
 ini_set('memory_limit', '-1');
-//serror_reporting(E_ALL);
+//error_reporting(E_ALL);
 
 date_default_timezone_set('Europe/Istanbul');
 setlocale(LC_ALL, "tr_TR");
@@ -57,7 +57,7 @@ $customErrorHandler = function (
     bool $displayErrorDetails,
     bool $logErrors,
     bool $logErrorDetails,
-    Logger $logger = null
+    ?Logger $logger = null
 ) use ($app) {
     if ($logger) {
         $logger->error($exception->getMessage());
@@ -101,7 +101,6 @@ $app->post('/login', function ($request, $response, array $args) {
                     . "; SameSite=None";
 
                 header("Set-Cookie: $cookie", false);
-
                 $qResponse = array("result" => "success", "cookie" => "yes", "user" => json_decode($user->toJson()));
             } else {
                 $qResponse = array("result" => "error", "error" => "Check Hash Value!");
@@ -927,7 +926,7 @@ $app->get('/deliveries', function ($request, $response, $args) {
 })->add(new JwtMiddleware($secretKey));
 
 $app->post('/setPrioty/{csID}/{prioty}', function ($request, $response, $args) {
-    require_once dirname(dirname(__FILE__)) . "/BL/Tables/contentStatus.php";
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/contentstatus.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/users.php";
     $jwt = $request->getAttribute('jwt');
     $userID = $jwt->user_id;
@@ -975,7 +974,7 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/contents.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/artists.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/artistAlbums.php";
-    require_once dirname(dirname(__FILE__)) . "/BL/Tables/contentStatus.php";
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/contentstatus.php";
 
     $json = $request->getBody();
     $data = json_decode($json, true);
@@ -1012,7 +1011,9 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
             $album = new albums($args["albumID"]);
             $album->contentID = $contentID;
             $album->upc = rtrim(ltrim($data['upc']));
-            $album->artFile = $data['artFile'];
+            if (isset($data['artFile'])) {
+                $album->artFile = $data['artFile'];
+            }
             $album->artFileMD5 = '';
             $album->artFileSize = 0;
             $album->title = $data['title'];
@@ -1022,22 +1023,44 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
             $album->subgenreID = $data['subgenreID'];
             $album->copyright = $data['copyright'];
             $album->releaseDate = $data['releaseDate'];
-            $album->prevReleased = $data['prevReleased'];
-            $album->pricing = $data['pricing'];
+            if (isset($data['prevReleased'])) {
+                $album->prevReleased = $data['prevReleased'];
+            }
+            if (isset($data['pricing'])) {
+                $album->pricing = $data['pricing'];
+            }
             $album->salesStartDate = $data['salesStartDate'];
             $album->status = 0;
-            $album->preorder = $data['preorder'];
-            $album->countryID = $data['countryID'];
+            if (isset($data['preorder'])) {
+                $album->preorder = $data['preorder'];
+            }
+            if (isset($data['countryID'])) {
+                $album->countryID = $data['countryID'];
+            }
             $album->titleVersion = $data['titleVersion'];
-            $album->preorderDate = $data['preorderDate'];
+            if (isset($data['preorderDate'])) {
+                $album->preorderDate = $data['preorderDate'];
+            }
             $album->labelName = $data['labelName'];
             $album->vendorID = $data['vendorID'];
-            $album->mfit = $data['mfit'];
-            $album->allowPreorderPreview = $data['allowPreorderPreview'];
-            $album->tags = $data['tags'];
-            $album->imprint = $data['imprint'];
-            $album->printLength = $data['printLength'];
-            $album->explicit = $data['explicit'];
+            if (isset($data['mfit'])) {
+                $album->mfit = $data['mfit'];
+            }
+            if (isset($data['allowPreorderPreview'])) {
+                $album->allowPreorderPreview = $data['allowPreorderPreview'];
+            }
+            if (isset($data['tags'])) {
+                $album->tags = $data['tags'];
+            }
+            if (isset($data['imprint'])) {
+                $album->imprint = $data['imprint'];
+            }
+            if (isset($data['printLength'])) {
+                $album->printLength = $data['printLength'];
+            }
+            if (isset($data['explicit'])) {
+                $album->explicit = $data['explicit'];
+            }
             $album->isCompilation = $data['isCompilation'];
             $album->numberOfVolumes = $data['numberOfVolumes'];
             $album->isReleaseLabel = $data['isReleaseLabel'];
@@ -1070,6 +1093,7 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
                         $albumArtist->roleID = $artistAlbum['roleID'];
                         $albumArtist->primary = $artistAlbum['primary'];;
                         $albumArtist->artistType = 0;
+                        $albumArtist->userID = $userID;
                         $albumArtist->save();
                     }
                 }
@@ -1135,7 +1159,7 @@ $app->post('/files/delete/{fileID}', function ($request, $response, $args) {
     if (file_exists($deleteFile)) {
         unlink($deleteFile);
     }
-    $response->getBody()->write($args["fileID"]);
+    $response->getBody()->write((string)$args["fileID"]);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -1177,7 +1201,7 @@ $app->post('/files/save/{fileID}', function ($request, $response, $args) {
         $file->userID = $userID;
         $fileID = $file->save();
     }
-    $response->getBody()->write($fileID);
+    $response->getBody()->write((string)$fileID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -1334,7 +1358,7 @@ $app->post('/albumDistribution/{albumID}', function ($request, $response, $args)
         $ticketClose->ticketMarkasFixed($data["contentID"]);
     }
     //return $response->withStatus(200)->write($args["albumID"]);
-    $response->getBody()->write($args["albumID"]);
+    $response->getBody()->write((string)$args["albumID"]);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -1488,7 +1512,7 @@ $app->post('/albums/delete/{contentID}/{albumID}/{isOld}', function ($request, $
         $alID = $args["albumID"];
     }
 
-    $response->getBody()->write($alID);
+    $response->getBody()->write((string)$alID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -1507,13 +1531,13 @@ $app->post('/republish/{platformID}/{contentID}', function ($request, $response,
         $cs = contentStatus::contentStatusWithPlatform($args["contentID"], $args["platformID"], 5);
         $cs->delete(1);
     }
-    $response->getBody()->write($content->ID);
+    $response->getBody()->write((string)$content->ID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
 
 $app->post('/platformTakedowm', function ($request, $response, $args) {
-    require_once dirname(dirname(__FILE__)) . "/BL/Tables/contentStatus.php";
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/contentstatus.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/contents.php";
     $jwt = $request->getAttribute('jwt');
     $userID = $jwt->user_id;
@@ -1535,7 +1559,7 @@ $app->post('/platformTakedowm', function ($request, $response, $args) {
         $cntStatus->dateCreated = date('Y-m-d H:i:s');
         $cntStatusID = $cntStatus->save();
     }
-    $response->getBody()->write($cntStatusID);
+    $response->getBody()->write((string)$cntStatusID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -1572,7 +1596,7 @@ $app->post('/albums/copy/{clanguage}', function ($request, $response, $args) {
     $tempArray = $tempArray . "]";
     //echo var_dump($tempArray);
     //return $response->withStatus(200)->write($tempArray);
-    $response->getBody()->write($tempArray);
+    $response->getBody()->write((string)$tempArray);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -1601,7 +1625,7 @@ $app->post('/sales/save/{ID}', function ($request, $response, $args) {
         $sales->processType = $data["processType"]; //1=first deploy 2=deploy 3=upgrade package
         $salesID = $sales->save();
     }
-    $response->getBody()->write($salesID);
+    $response->getBody()->write((string)$salesID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -1634,7 +1658,7 @@ $app->post('/assetChanges/save/{ID}', function ($request, $response, $args) {
             $assetChangeID = $assetChange->save();
         }
     }
-    $response->getBody()->write($assetChangeID);
+    $response->getBody()->write((string)$assetChangeID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -1701,7 +1725,7 @@ $app->post('/tracks/save/{trackID}', function ($request, $response, $args) {
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/tracks.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/artists.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/artistTracks.php";
-    require_once dirname(dirname(__FILE__)) . "/BL/Tables/albumsTracks.php";
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/albumstracks.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/trackISRCs.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/albums.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/contents.php";
@@ -1726,20 +1750,28 @@ $app->post('/tracks/save/{trackID}', function ($request, $response, $args) {
         $track = new tracks($args["trackID"]);
         $track->title = $data['title'];
         $track->isrc = $data['isrc'];
-        $track->assetFile = $data['assetFile'];
+        if (isset($data['assetFile'])) {
+            $track->assetFile = $data['assetFile'];
+        }
         $track->genreID = $data['genreID'];
         $track->explicit = $data['explicit'];
         $track->pricing = $data['pricing'];
         $track->subgenreID = $data['subgenreID'];
         $track->copyright = $data['copyright'];
-        $track->isPDF = $data['isPDF'];
+        if (isset($data['isPDF'])) {
+            $track->isPDF = $data['isPDF'];
+        }
         $track->trackVersion = $data['trackVersion'];
         $track->trackLabel = $data['trackLabel'];
         $track->lyrics = $data['lyrics'];
-        $track->lrc = $data['lrc'];
+        if (isset($data['lrc'])) {
+            $track->lrc = $data['lrc'];
+        }
         $track->lp = $data['lp'];
         $track->lpCountry = $data['lpCountry'];
-        $track->previewTime = $data['previewTime'];
+        if (isset($data['previewTime'])) {
+            $track->previewTime = $data['previewTime'];
+        }
         $track->djmixes = isset($data["djmixes"]) ? $data["djmixes"] : 0;
         $track->relatedISRC = isset($data["relatedISRC"]) ? $data["relatedISRC"] : "";
         $track->avRating = isset($data["avRating"]) ? $data["avRating"] : 0;
@@ -1762,6 +1794,7 @@ $app->post('/tracks/save/{trackID}', function ($request, $response, $args) {
             $artistTrack = new artistTracks($trackArtist["ID"]);
             $artistTrack->trackID = $trackID;
             $artistTrack->artistID = $artistID;
+            $artistTrack->userID = $userID;
             $artistTrack->roleID = $trackArtist["roleID"];
             $artistTrack->primary = $trackArtist["primary"];
             $artistTrackID = $artistTrack->save();
@@ -1771,23 +1804,32 @@ $app->post('/tracks/save/{trackID}', function ($request, $response, $args) {
             $albumsTracks = new albumsTracks($args["trackID"]);
             $albumsTracks->albumID = $data['albumID'];
             $albumsTracks->trackID = $trackID;
+            $albumsTracks->userID = $userID;
             $albumsTracks->trackOrder = $data['trackOrder'];
             $albumsTracks->save();
         }
         if ($trackID > 0) {
             $ti = trackISRCs::getTrackISRC($trackID, 1);
-            if ($data['dolbyAtmosISRC'] != "") {
-                $ti->trackID = $trackID;
-                $ti->isrc = ltrim($data['dolbyAtmosISRC']);
-                $ti->isrcType = 1;
-                $ti->save();
+            if (isset($data['dolbyAtmosISRC'])) {
+                if ($data['dolbyAtmosISRC'] != "") {
+                    $ti->trackID = $trackID;
+                    $ti->isrc = ltrim($data['dolbyAtmosISRC']);
+                    $ti->isrcType = 1;
+                    $ti->save();
+                } else {
+                    if ($ti->ID > 0) {
+                        $ti->delete(1);
+                    }
+                }
             } else {
-                $ti->delete(1);
+                if ($ti->ID > 0) {
+                    $ti->delete(1);
+                }
             }
         }
     }
 
-    $response->getBody()->write($trackID);
+    $response->getBody()->write((string)$trackID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -1808,7 +1850,7 @@ $app->get('/searchTracks/{searchText}[/{albumID}]', function ($request, $respons
 })->add(new JwtMiddleware($secretKey));
 
 $app->post('/trackCopy', function ($request, $response, $args) {
-    require_once dirname(dirname(__FILE__)) . "/BL/Tables/albumsTracks.php";
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/albumstracks.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/tracks.php";
     $json = $request->getBody();
     $data = json_decode($json, true);
@@ -1822,12 +1864,12 @@ $app->post('/trackCopy', function ($request, $response, $args) {
     $albumsTracks->trackID = $trackID;
     $albumsTracks->trackOrder = $data["trackOrder"];
     $ID = $albumsTracks->save();
-    $response->getBody()->write($ID);
+    $response->getBody()->write((string)$ID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
 $app->post('/albumTracksOrder', function ($request, $response, $args) {
-    require_once dirname(dirname(__FILE__)) . "/BL/Tables/albumsTracks.php";
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/albumstracks.php";
     $json = $request->getBody();
     $orderData = json_decode($json, true);
     foreach ($orderData as $data) {
@@ -1837,7 +1879,7 @@ $app->post('/albumTracksOrder', function ($request, $response, $args) {
         if (!$ID > 0)
             return $response->withStatus(200)->write(-1);
     }
-    $response->getBody()->write($ID);
+    $response->getBody()->write((string)$ID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -1870,7 +1912,7 @@ $app->get('/getDeliveredAlbumByTrackID/{trackID}', function ($request, $response
 */
 
 $app->post('/albumsTracks/delete/{albumsTrackID}/{trackID}', function ($request, $response, $args) {
-    require_once dirname(dirname(__FILE__)) . "/BL/Tables/albumsTracks.php";
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/albumstracks.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/tracks.php";
     $jwt = $request->getAttribute('jwt');
     $userID = $jwt->user_id;
@@ -1936,7 +1978,7 @@ $app->post('/albumsTracks/delete/{albumsTrackID}/{trackID}', function ($request,
             $trID = $args["trackID"];
         }
     }
-    $response->getBody()->write($trID);
+    $response->getBody()->write((string)$trID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 //royalty related
@@ -2152,7 +2194,7 @@ $app->post('/royalty/createinvoice/{userID}', function ($request, $response, $ar
             $result = $is->save();
         }
     }
-    $response->getBody()->write($result);
+    $response->getBody()->write((string)$result);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2262,7 +2304,7 @@ $app->post('/artists/tracks/save/{artistID}/{trackID}', function ($request, $res
     $artistTracks->roleID = $data['roleID'];
     $artistTracks->primary = $data['primary'];
     $artistTracksResponse = $artistTracks->save();
-    $response->getBody()->write($artistTracksResponse);
+    $response->getBody()->write((string)$artistTracksResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2275,7 +2317,7 @@ $app->post('/artists/tracks/delete/{ID}', function ($request, $response, $args) 
     if ($userID == $artistTracks->userID) {
         $artistTracksResponse = $artistTracks->delete(1);
     }
-    $response->getBody()->write($artistTracksResponse);
+    $response->getBody()->write((string)$artistTracksResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2300,7 +2342,7 @@ $app->post('/artists/albums/save/{artistID}/{albumID}', function ($request, $res
         $artistAlbum->artistType = $data['artistType'];
         $artistAlbumResponse = $artistAlbum->save();
     }
-    $response->getBody()->write($artistAlbumResponse);
+    $response->getBody()->write((string)$artistAlbumResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2313,7 +2355,7 @@ $app->post('/artists/albums/delete/{ID}', function ($request, $response, $args) 
     if ($userID == $artistAlbum->userID) {
         $artistAlbumResponse = $artistAlbum->delete(1);
     }
-    $response->getBody()->write($artistAlbumResponse);
+    $response->getBody()->write((string)$artistAlbumResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2330,7 +2372,7 @@ $app->post('/albumArtistsDelete', function ($request, $response, $args) {
             $artistAlbumResponse = $artistAlbum->delete(1);
         }
     }
-    $response->getBody()->write($artistAlbumResponse);
+    $response->getBody()->write((string)$artistAlbumResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2347,7 +2389,7 @@ $app->post('/artistSocials/save/{artistID}', function ($request, $response, $arg
     $artist->ISNI = $data['ISNI'];
     $artistResponse = $artist->save();
 
-    $response->getBody()->write($artistResponse);
+    $response->getBody()->write((string)$artistResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2375,7 +2417,7 @@ $app->post('/artists/save/{artistID}', function ($request, $response, $args) {
 
         $artistResponse = $artist->save();
     }
-    $response->getBody()->write($artistResponse);
+    $response->getBody()->write((string)$artistResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2542,7 +2584,7 @@ $app->post('/contracts/save/{contractID}', function ($request, $response, $args)
         }
     }
 
-    $response->getBody()->write($contractResponse);
+    $response->getBody()->write((string)$contractResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2556,7 +2598,7 @@ $app->post('/contracts/delete/{contractID}', function ($request, $response, $arg
         $contract = new contracts($args["contractID"]);
         $contractResponse = $contract->delete();
     }
-    $response->getBody()->write($contractResponse);
+    $response->getBody()->write((string)$contractResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2582,7 +2624,7 @@ $app->post('/customer/contracts/save/{customerID}/{contractID}', function ($requ
     $customerContract->dealTermID = $data['dealTermID'];
     $customerContract->contractApprovalDate = date('Y-m-d H:i:s');
     $customerContractResponse = $customerContract->save();
-    $response->getBody()->write($customerContractResponse);
+    $response->getBody()->write((string)$customerContractResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2603,7 +2645,7 @@ $app->post('/customer/contracts/delete/{customerID}/{contractID}', function ($re
         $customerContract = new customerContracts($ID);
         $customerContractResponse = $customerContract->delete();
     }
-    $response->getBody()->write($customerContractResponse);
+    $response->getBody()->write((string)$customerContractResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2706,10 +2748,12 @@ $app->post('/uploads/{uploadType}/{contentID}/{albumID}[/{contentType}/{isOld}]'
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/albums.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/tracks.php";
     require_once dirname(dirname(__FILE__)) . "/BL/functions.php";
-    $jwt = $request->getAttribute('jwt');
-    $userID = $jwt->user_id;
     $json = $request->getBody();
     $data = json_decode($json, true);
+
+    $jwt = $request->getAttribute('jwt');
+    $userID = $jwt->user_id;
+   
     isset($args["contentType"]) ? $contentType = $args["contentType"] : $contentType = 0;
     isset($args["isOld"]) ? $isOld = $args["isOld"] : $isOld = 0;
     $uID = 1;
@@ -2724,7 +2768,7 @@ $app->post('/uploads/{uploadType}/{contentID}/{albumID}[/{contentType}/{isOld}]'
     } else {
         $uID = -1;
     }
-    $response->getBody()->write($uID);
+    $response->getBody()->write((string)$uID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2744,7 +2788,7 @@ $app->post('/delete/booklet/{contentID}', function ($request, $response, $args) 
     }
     $track = new tracks($data["trackID"]);
     $trackID = $track->delete(1);
-    $response->getBody()->write($trackID);
+    $response->getBody()->write((string)$trackID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2780,7 +2824,7 @@ $app->post('/settings/emailreports/save/{emailTypeId}/{period}/{userID}', functi
         $emailReportResponse = $emailReport->save();
     }
 
-    $response->getBody()->write($emailReportResponse);
+    $response->getBody()->write((string)$emailReportResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2793,7 +2837,7 @@ $app->post('/settings/emailreports/delete/{emailreportID}', function ($request, 
     if ($userID == $emailReport->userID) {
         $emailReportResponse = $emailReport->delete();
     }
-    $response->getBody()->write($emailReportResponse);
+    $response->getBody()->write((string)$emailReportResponse);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2874,7 +2918,7 @@ $app->post('/readmail/{userID}', function ($request, $response, $args) {
     $mailQueue->readDate = date('Y-m-d H:i:s');
     $mailres = $mailQueue->save();
 
-    $response->getBody()->write($mailres);
+    $response->getBody()->write((string)$mailres);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -2892,7 +2936,7 @@ $app->get('/getReviewsContents', function ($request, $response, $args) {
 })->add(new JwtMiddleware($secretKey));
 
 $app->post('/albumDistributionError/{contentID}', function ($request, $response, $args) {
-    require_once dirname(dirname(__FILE__)) . "/BL/Tables/contentStatus.php";
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/contentstatus.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/contents.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/contentErrors.php";
     require_once dirname(dirname(__FILE__)) . "/BL/functions.php";
@@ -2930,7 +2974,7 @@ $app->post('/albumDistributionError/{contentID}', function ($request, $response,
     $cntStatus->dateCreated = date('Y-m-d H:i:s');
     $cntStatusID = $cntStatus->save();
 
-    $response->getBody()->write($cntStatusID);
+    $response->getBody()->write((string)$cntStatusID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -3001,7 +3045,7 @@ $app->post('/ticketClose/{sessionID}', function ($request, $response, $args) {
     $userID = $jwt->user_id;
     $ticketClose = new contentErrors();
     $ID = $ticketClose->ticketClose($args["sessionID"], $userID);
-    $response->getBody()->write($ID);
+    $response->getBody()->write((string)$ID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -3040,7 +3084,23 @@ $app->post('/ticket/delete/{ID}', function ($request, $response, $args) {
     if ($userID == $ticket->userID) {
         $ID = $ticket->delete(1);
     }
-    $response->getBody()->write($ID);
+    $response->getBody()->write((string)$ID);
+    return $response;
+})->add(new JwtMiddleware($secretKey));
+
+$app->post('/contentStatus/delete/{csID}', function ($request, $response, $args) {
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/contentstatus.php";
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/users.php";
+
+    $jwt = $request->getAttribute('jwt');
+    $userID = $jwt->user_id;
+    $user = new users($userID);
+    $ID=0;
+    if ($user->roleID==1 || $user->roleID==2) {
+         $cs = new contentStatus($args["csID"]);
+        $ID = $cs->delete(1);
+    }
+    $response->getBody()->write((string)$ID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -3069,7 +3129,7 @@ $app->post('/marketingContacts/delete/{ID}', function ($request, $response, $arg
         $mc = new marketingContacts($args["ID"]);
         $ID = $mc->delete(1);
     }
-    $response->getBody()->write($ID);
+    $response->getBody()->write((string)$ID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -3089,7 +3149,7 @@ $app->post('/appleImports', function ($request, $response, $args) {
         $ai->status = 1;
         $aiID = $ai->save();
     }
-    $response->getBody()->write($aiID);
+    $response->getBody()->write((string)$aiID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 
@@ -3110,7 +3170,7 @@ $app->post('/marketingContacts/save/{ID}', function ($request, $response, $args)
         $mc->contactType = $data["contactType"];
         $mcID = $mc->save();
     }
-    $response->getBody()->write($mcID);
+    $response->getBody()->write((string)$mcID);
     return $response;
 })->add(new JwtMiddleware($secretKey));
 

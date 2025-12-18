@@ -2,6 +2,8 @@
 require_once dirname(dirname(dirname(__FILE__))) . "/DL/DAL.php";
 
 use data\TableItem;
+#[\AllowDynamicProperties]
+
 class tokenBlacklists extends TableItem
 {
 	// fields

@@ -1,48 +1,50 @@
 <?php
 
-function uploadBooklet($data, $userID, $contentID, $albumID,$isOld)
+function uploadBooklet($data, $userID, $contentID, $albumID, $isOld)
 {
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/albums.php";
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/tracks.php";
-    require_once dirname(dirname(__FILE__)) . "/BL/Tables/albumsTracks.php";
-    $createdBy = userID;
-    $customerID = customerID;
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/albumstracks.php";
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/users.php";
+
+    $createdBy = $userID;
+    $user = new users($userID);
+    $customerID = $user->customerID;
     $uploadsPath = dirname(dirname(__FILE__)) . "/uploads/";
-    if($isOld > 0){
-        if (!is_dir($uploadsPath . $userID)) {        
+    if ($isOld > 0) {
+        if (!is_dir($uploadsPath . $userID)) {
             mkdir($uploadsPath . $userID);
-        }        
+        }
         if (!is_dir($uploadsPath . $userID . "/" . $contentID)) {
             mkdir($uploadsPath  . $userID . "/" . $contentID);
         }
         if (!is_dir($uploadsPath . $userID . "/" . $contentID . "/audio")) {
             mkdir($uploadsPath  . $userID . "/" . $contentID . "/audio");
         }
-        $contentIDPath = $uploadsPath . $userID . "/" . $contentID . "/audio/";    
-    }
-    else{
+        $contentIDPath = $uploadsPath . $userID . "/" . $contentID . "/audio/";
+    } else {
         if (!is_dir($uploadsPath . "customers")) {
             mkdir($uploadsPath . "customers");
         }
-        if (!is_dir($uploadsPath . "customers/". $customerID)) {
-            mkdir($uploadsPath . "customers/". $customerID);
+        if (!is_dir($uploadsPath . "customers/" . $customerID)) {
+            mkdir($uploadsPath . "customers/" . $customerID);
         }
-        if (!is_dir($uploadsPath . "customers/". $customerID . "/" . $contentID)) {
-            mkdir($uploadsPath  . "customers/". $customerID . "/" . $contentID);
+        if (!is_dir($uploadsPath . "customers/" . $customerID . "/" . $contentID)) {
+            mkdir($uploadsPath  . "customers/" . $customerID . "/" . $contentID);
         }
-        $contentIDPath = $uploadsPath . "customers/". $customerID . "/" . $contentID . "/";
+        $contentIDPath = $uploadsPath . "customers/" . $customerID . "/" . $contentID . "/";
     }
-    
+
     $outputFile = $contentIDPath . $data["fileName"];
     $oldFilePath = $contentIDPath . $data["oldFileName"];
     base64_to_file($data["file"], $outputFile);
-    if($data["oldFileName"] != '' && $data["oldFileName"] != $data["fileName"] ){
+    if ($data["oldFileName"] != '' && $data["oldFileName"] != $data["fileName"]) {
         unlink($oldFilePath);
     }
 
     $alb = albums::getAlbumByPdfID($createdBy, $contentID);
 
-    $alb->isPDF > 0 ? $trackID = $alb->trackID : $trackID=0;    
+    $alb->isPDF > 0 ? $trackID = $alb->trackID : $trackID = 0;
     $pdf = new tracks($trackID);
     $pdf->title = "Digital Booklet";
     $pdf->isrc = "UNDEFINED";
@@ -72,34 +74,36 @@ function uploadBooklet($data, $userID, $contentID, $albumID,$isOld)
     }
 }
 function uploadImage($data, $userID, $contentID, $albumID, $contentType, $isOld)
-{    
+{
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/albums.php";
-    $customerID = customerID;
-    $uploadsPath = dirname(dirname(__FILE__)) . "/uploads/";    
-    if($isOld > 0){                
-        if (!is_dir($uploadsPath . $userID)) {        
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/users.php";
+
+    $user = new users($userID);
+    $customerID = $user->customerID;
+    $uploadsPath = dirname(dirname(__FILE__)) . "/uploads/";
+    if ($isOld > 0) {
+        if (!is_dir($uploadsPath . $userID)) {
             mkdir($uploadsPath . $userID);
-        }        
+        }
         if (!is_dir($uploadsPath . $userID . "/" . $contentID)) {
             mkdir($uploadsPath  . $userID . "/" . $contentID);
-        }    
+        }
         $albumPath = $uploadsPath  . $userID . "/" . $contentID . "/";
         $outputFile = $albumPath . $data["fileName"];
-    }
-    else{
+    } else {
         if (!is_dir($uploadsPath . "customers")) {
             mkdir($uploadsPath . "customers");
         }
-        if (!is_dir($uploadsPath . "customers/". $customerID)) {
-            mkdir($uploadsPath . "customers/". $customerID);
+        if (!is_dir($uploadsPath . "customers/" . $customerID)) {
+            mkdir($uploadsPath . "customers/" . $customerID);
         }
-        if (!is_dir($uploadsPath . "customers/". $customerID . "/" . $contentID)) {
-            mkdir($uploadsPath  . "customers/". $customerID . "/" . $contentID);
+        if (!is_dir($uploadsPath . "customers/" . $customerID . "/" . $contentID)) {
+            mkdir($uploadsPath  . "customers/" . $customerID . "/" . $contentID);
         }
-    
-        $albumPath = $uploadsPath  . "customers/". $customerID . "/" . $contentID . "/";
+
+        $albumPath = $uploadsPath  . "customers/" . $customerID . "/" . $contentID . "/";
         $outputFile = $albumPath . $data["fileName"];
-    }        
+    }
     base64_to_file($data["file"], $outputFile);
     list($coverMD5, $coverSize) = handleAlbumArt($userID, $contentID, $outputFile, $contentType, $isOld);
     $albcover = new albums($albumID);
@@ -110,41 +114,43 @@ function uploadImage($data, $userID, $contentID, $albumID, $contentType, $isOld)
 }
 function uploadMusic($data, $userID, $contentID, $isOld)
 {
-    $customerID = customerID;
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/users.php";
+
+    $user = new users($userID);
+    $customerID = $user->customerID;
     $uploadsPath = dirname(dirname(__FILE__)) . "/uploads/";
-    
-    if($isOld > 0){
-        if (!is_dir($uploadsPath . $userID)) {        
+
+    if ($isOld > 0) {
+        if (!is_dir($uploadsPath . $userID)) {
             mkdir($uploadsPath . $userID);
-        }        
+        }
         if (!is_dir($uploadsPath . $userID . "/" . $contentID)) {
             mkdir($uploadsPath  . $userID . "/" . $contentID);
         }
         if (!is_dir($uploadsPath . $userID . "/" . $contentID . "/audio")) {
             mkdir($uploadsPath  . $userID . "/" . $contentID . "/audio");
         }
-        $audioPath = $uploadsPath . $userID . "/" . $contentID . "/audio/";            
-    }
-    else{
+        $audioPath = $uploadsPath . $userID . "/" . $contentID . "/audio/";
+    } else {
         if (!is_dir($uploadsPath . "customers")) {
             mkdir($uploadsPath . "customers");
         }
-        if (!is_dir($uploadsPath . "customers/". $customerID)) {
-            mkdir($uploadsPath . "customers/". $customerID);
+        if (!is_dir($uploadsPath . "customers/" . $customerID)) {
+            mkdir($uploadsPath . "customers/" . $customerID);
         }
-        if (!is_dir($uploadsPath . "customers/". $customerID . "/tracks" )) {
-            mkdir($uploadsPath  . "customers/". $customerID . "/tracks");
+        if (!is_dir($uploadsPath . "customers/" . $customerID . "/tracks")) {
+            mkdir($uploadsPath  . "customers/" . $customerID . "/tracks");
         }
-        $audioPath = $uploadsPath . "customers/". $customerID . "/tracks/" ;
+        $audioPath = $uploadsPath . "customers/" . $customerID . "/tracks/";
     }
-    
+
     $outputFile = $audioPath . $data["fileName"];
     $oldFilePath = $audioPath . $data["oldFileName"];
     base64_to_file($data["file"], $outputFile);
-    if($data["oldFileName"] != '' && $data["oldFileName"] != $data["fileName"] ){
+    if ($data["oldFileName"] != '' && $data["oldFileName"] != $data["fileName"]) {
         unlink($oldFilePath);
     }
-    list($duration,$fileMD5, $fileSize) = getTrackInfo($outputFile);
+    list($duration, $fileMD5, $fileSize) = getTrackInfo($outputFile);
     $track = new tracks($data["trackID"]);
     $track->assetFile = $data["fileName"];
     $track->filesize = $fileSize;
@@ -152,17 +158,18 @@ function uploadMusic($data, $userID, $contentID, $isOld)
     $track->duration = $duration;
     $track->save();
 }
-function uploadContract($data){    
+function uploadContract($data)
+{
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/customerContracts.php";
 
-    $uploadsPath = dirname(dirname(__FILE__)) . "/uploads/";    
-    if (!is_dir($contractsPath = $uploadsPath."contracts")) {
-        mkdir($contractsPath = $uploadsPath."contracts");
-    }        
-    $outputFile = $contractsPath."/". $data["fileName"];
-    $oldFilePath = $contractsPath."/". $data["oldFileName"];
+    $uploadsPath = dirname(dirname(__FILE__)) . "/uploads/";
+    if (!is_dir($contractsPath = $uploadsPath . "contracts")) {
+        mkdir($contractsPath = $uploadsPath . "contracts");
+    }
+    $outputFile = $contractsPath . "/" . $data["fileName"];
+    $oldFilePath = $contractsPath . "/" . $data["oldFileName"];
     base64_to_file($data["file"], $outputFile);
-    if($data["oldFileName"] != '' && $data["oldFileName"] != $data["fileName"] ){
+    if ($data["oldFileName"] != '' && $data["oldFileName"] != $data["fileName"]) {
         unlink($oldFilePath);
     }
 
@@ -172,22 +179,39 @@ function uploadContract($data){
 
 function base64_to_file($data, $output_file)
 {
-    $ifp = fopen($output_file, "wb");
-    $result = fwrite($ifp, base64_decode($data));
+    $decoded = base64_decode($data, true); // strict mode
+
+    if ($decoded === false) {
+        throw new RuntimeException('Invalid base64 data');
+    }
+    $ifp = fopen($output_file, 'wb');
+    if ($ifp === false) {
+        throw new RuntimeException('File could not be opened');
+    }
+
+    $result = fwrite($ifp, $decoded);
     fclose($ifp);
+
     return $result;
+
+    // $ifp = fopen($output_file, "wb");
+    // $result = fwrite($ifp, base64_decode($data));
+    // fclose($ifp);
+    // return $result;
 }
 function handleAlbumArt($userID, $contentId, $uploadedFile, $contentType, $isOld)
 {
     require_once dirname(dirname(__FILE__)) . '/BL/resize_class.php';
-    $customerID = customerID;
-    if($isOld > 0){
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/users.php";
+
+    $user = new users($userID);
+    $customerID = $user->customerID;
+    if ($isOld > 0) {
         $newAlbumCoverFolder = dirname(dirname(__FILE__)) . "/uploads/" . $userID . "/" . $contentId;
-    }
-    else{
+    } else {
         $newAlbumCoverFolder = dirname(dirname(__FILE__)) . "/uploads/customers/" . $customerID . "/" . $contentId;
     }
-    
+
     $newFile = $newAlbumCoverFolder . "/coverOriginal.jpg";
     $artFilePath = $newAlbumCoverFolder . "/cover.jpg";
     $artFileMiniPath = $newAlbumCoverFolder . "/r_cover.jpg";
@@ -294,17 +318,19 @@ function handleAlbumArt($userID, $contentId, $uploadedFile, $contentType, $isOld
     return array($md5, $images_size);
 }
 
-function getTrackInfo($filePath){
+function getTrackInfo($filePath)
+{
     $md5 = hash_file('md5', $filePath);
     $filesize = filesize($filePath);
-    exec(dirname(dirname(__FILE__))."/unix/ffmpeg -i ".$filePath." 2>&1 | grep Duration | awk '{print $2}' | tr -d , ", $output);
+    exec(dirname(dirname(__FILE__)) . "/unix/ffmpeg -i " . $filePath . " 2>&1 | grep Duration | awk '{print $2}' | tr -d , ", $output);
     // exec("/usr/bin/ffmpeg -i ".$filePath." 2>&1 | grep Duration | awk '{print $2}' | tr -d , ", $output);
-    list($a,$b,$c,$d)=explode(':', str_replace('.', ':', $output[0]));            
+    list($a, $b, $c, $d) = explode(':', str_replace('.', ':', $output[0]));
     $duration = 0;
-    $duration = ($a*60*60)+($b*60)+($c);
+    $duration = ((int)$a * 60 * 60) + ((int)$b * 60) + ((int)$c);
     return array($duration, $md5, $filesize);
 }
-function deleteDirectory($dir) {
+function deleteDirectory($dir)
+{
     if (!file_exists($dir)) {
         return true;
     }
@@ -322,9 +348,9 @@ function deleteDirectory($dir) {
     return rmdir($dir);
 }
 
-function sendEmail($senderUserID, $toFullName, $toEmail, $subject, $body, $templateID, $channelID) {
-    try
-    {
+function sendEmail($senderUserID, $toFullName, $toEmail, $subject, $body, $templateID, $channelID)
+{
+    try {
         require_once dirname(dirname(__FILE__)) . "/BL/Tables/mailQueue.php";
         $mailQueue = new mailQueue();
         $mailQueue->sender = $senderUserID; //gonderen user ID
@@ -337,12 +363,10 @@ function sendEmail($senderUserID, $toFullName, $toEmail, $subject, $body, $templ
         $mailQueue->channelID = $channelID; //mail ChannelID
         $mailQueue->save();
         return true;
-    }
-    catch (Exception $error)
-    {
+    } catch (Exception $error) {
         //echo $error->getMessage();
         return false;
-    } 
+    }
 }
 
 function getRandomSessionID()
@@ -356,38 +380,39 @@ function getRandomSessionID()
     }
     return implode($pass);
 }
-function ean13_check_digit($digits){
+function ean13_check_digit($digits)
+{
 
     //echo $digits;
     //first change digits to a string so that we can access individual numbers
-    $digits =(string)$digits;
+    $digits = (string)$digits;
     // 1. Add the values of the digits in the even-numbered positions: 2, 4, 6, etc.
-    $even_sum = $digits{1} + $digits{3} + $digits{5} + $digits{7} + $digits{9} + $digits{11};
+    $even_sum = $digits[1] + $digits[3] + $digits[5] + $digits[7] + $digits[9] + $digits[11];
     // 2. Multiply this result by 3.
     $even_sum_three = $even_sum * 3;
     // 3. Add the values of the digits in the odd-numbered positions: 1, 3, 5, etc.
-    $odd_sum = $digits{0} + $digits{2} + $digits{4} + $digits{6} + $digits{8} + $digits{10};
+    $odd_sum = $digits[0] + $digits[2] + $digits[4] + $digits[6] + $digits[8] + $digits[10];
     // 4. Sum the results of steps 2 and 3.
     $total_sum = $even_sum_three + $odd_sum;
     // 5. The check character is the smallest number which, when added to the result in step 4,  produces a multiple of 10.
-    $next_ten = (ceil($total_sum/10))*10;
+    $next_ten = (ceil($total_sum / 10)) * 10;
     $check_digit = $next_ten - $total_sum;
     //echo $digits . $check_digit;
     return $digits . $check_digit;
 }
-function albumCopyAsset($data, $newAlbumID, $newContentID, $userID, $customerID){
+function albumCopyAsset($data, $newAlbumID, $newContentID, $userID, $customerID)
+{
     require_once dirname(dirname(__FILE__)) . "/BL/Tables/contents.php";
     $oldContent = new contents($data["contentID"]);
 
     $uploadsPath = dirname(dirname(__FILE__)) . "/uploads/";
 
-    if($data["isOld"] == 1){
-        $oldAlbumPath = $uploadsPath.$oldContent->userID."/".$data["contentID"];
-        $newAlbumPath = $uploadsPath."customers/".$customerID."/".$newContentID;        
-    }
-    else{
-        $oldAlbumPath = $uploadsPath."customers/".$customerID."/".$data["contentID"];
-        $newAlbumPath = $uploadsPath."customers/".$customerID."/".$newContentID;
+    if ($data["isOld"] == 1) {
+        $oldAlbumPath = $uploadsPath . $oldContent->userID . "/" . $data["contentID"];
+        $newAlbumPath = $uploadsPath . "customers/" . $customerID . "/" . $newContentID;
+    } else {
+        $oldAlbumPath = $uploadsPath . "customers/" . $customerID . "/" . $data["contentID"];
+        $newAlbumPath = $uploadsPath . "customers/" . $customerID . "/" . $newContentID;
     }
     /*
     if (!is_dir($newAlbumPath)) {        
@@ -397,7 +422,6 @@ function albumCopyAsset($data, $newAlbumID, $newContentID, $userID, $customerID)
     //echo $oldAlbumPath. " - ". $newAlbumPath;        
     //recurse_copy($oldAlbumPath,$newAlbumPath);
     shell_exec("cp -r $oldAlbumPath $newAlbumPath");
-    
 }
 /*
 function recurse_copy($src,$dst) {  
@@ -416,5 +440,3 @@ function recurse_copy($src,$dst) {
     closedir($dir);
 }
 */
-
-?>
