@@ -161,12 +161,12 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
             }
             $album->artFileMD5 = '';
             $album->artFileSize = 0;
-            $album->title = $data['title'];
-            $album->description = $data['description'];
+            $album->title = trim($data['title']);
+            $album->description = trim($data['description']);
             $album->languageID = $data['languageID'];
             $album->genreID = $data['genreID'];
             $album->subgenreID = $data['subgenreID'];
-            $album->copyright = $data['copyright'];
+            $album->copyright = trim($data['copyright']);
             $album->releaseDate = $data['releaseDate'];
             if (isset($data['prevReleased'])) {
                 $album->prevReleased = $data['prevReleased'];
@@ -182,11 +182,11 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
             if (isset($data['countryID'])) {
                 $album->countryID = $data['countryID'];
             }
-            $album->titleVersion = $data['titleVersion'];
+            $album->titleVersion = trim($data['titleVersion']);
             if (isset($data['preorderDate'])) {
                 $album->preorderDate = $data['preorderDate'];
             }
-            $album->labelName = $data['labelName'];
+            $album->labelName = trim($data['labelName']);
             $album->vendorID = $data['vendorID'];
             if (isset($data['mfit'])) {
                 $album->mfit = $data['mfit'];
@@ -219,11 +219,11 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
                     // if ($artistAlbum["isNeworUpdate"] > 0) {
                     $artistID = 0;
                     if (!$artistAlbum["artistID"] > 0) {
-                        $getID = artists::getIsArtisID($artistAlbum['name']);
+                        $getID = artists::getIsArtisID(trim($artistAlbum['name']));
                         $artistID = $getID->ID;
                         if (!$artistID > 0) {
                             $newArtist = new artists();
-                            $newArtist->name = $artistAlbum['name'];
+                            $newArtist->name = trim($artistAlbum['name']);
                             $newArtist->dateCreated = date('Y-m-d H:i:s');
                             $newArtist->createdBy = $userID;
                             $artistID = $newArtist->save();
@@ -242,12 +242,15 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
                         $albumArtist->save();
                     }
                 }
+                if (isset($data["imageData"])) {
+                    uploadImage($data["imageData"], $userID, $contentID, $albumID, $contentType, 0);
+                }
 
                 // insert tracks
                 foreach ($data['tracks'] as $trackData) {
                     $track = new tracks();
-                    $track->title = $trackData['title'];
-                    $track->isrc = $trackData['isrc'];
+                    $track->title = trim($trackData['title']);
+                    $track->isrc = trim($trackData['isrc']);
                     if (isset($trackData['assetFile'])) {
                         $track->assetFile = $data['assetFile'];
                     }
@@ -255,13 +258,13 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
                     $track->explicit = $trackData['explicit'];
                     $track->pricing = $trackData['pricing'];
                     $track->subgenreID = $trackData['subgenreID'];
-                    $track->copyright = $trackData['copyright'];
+                    $track->copyright = trim($trackData['copyright']);
                     if (isset($trackData['isPDF'])) {
                         $track->isPDF = $trackData['isPDF'];
                     }
-                    $track->trackVersion = $trackData['trackVersion'];
-                    $track->trackLabel = $trackData['trackLabel'];
-                    $track->lyrics = $trackData['lyrics'];
+                    $track->trackVersion = trim($trackData['trackVersion']);
+                    $track->trackLabel = trim($trackData['trackLabel']);
+                    $track->lyrics = trim($trackData['lyrics']);
                     if (isset($trackData['lrc'])) {
                         $track->lrc = $trackData['lrc'];
                     }
@@ -277,15 +280,15 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
 
                     foreach ($trackData["trackArtists"] as $trackArtist) {
                         $artistID = 0;
-                        $newArtist = artists::getArtistFromName($trackArtist['name']);
+                        $newArtist = artists::getArtistFromName(trim($trackArtist['name']));
                         if ($newArtist->ID > 0) {
                             $artistID = $newArtist->ID;
                         } else {
-                            $newArtist->name = $trackArtist['name'];
+                            $newArtist->name = trim($trackArtist['name']);
                             $newArtist->dateCreated = date('Y-m-d H:i:s');
                             $newArtist->createdBy = $userID;
-                            $newArtist->appleID = $trackArtist['appleID'];
-                            $newArtist->spotifyID = $trackArtist['spotifyID'];
+                            $newArtist->appleID = trim($trackArtist['appleID']);
+                            $newArtist->spotifyID = trim($trackArtist['spotifyID']);
                             $artistID = $newArtist->save();
                         }
 
@@ -308,6 +311,19 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
                         $albumsTracks->userID = $userID;
                         $albumsTracks->trackOrder = $data['trackOrder'];
                         $albumsTracks->save();
+
+                        isset($data['contentType']) ? $contentType = $data['contentType'] : $contentType = 0;
+                        isset($data['isOld']) ? $isOld = $data['isOld'] : $isOld = 0;
+                        $uID = 1;
+                        if ($args["uploadType"] == 'Booklet') {
+                            uploadBooklet($trackArtist["assetData"], $userID, $contentID, $albumID, $isOld);
+                        } else if ($args["uploadType"] == 'Image') {
+                            uploadImage($trackArtist["assetData"], $userID, $contentID, $albumID, $contentType, $isOld);
+                        } else if ($args["uploadType"] == 'Music') {
+                            uploadMusic($trackArtist["assetData"], $userID, $contentID, $isOld);
+                        } else {
+                            $uID = -1;
+                        }
                     }
                 }
             }
