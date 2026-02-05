@@ -140,12 +140,8 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
         $user = new users($content->userID);
         if (($args["albumID"] > 0 && $customerID == $user->customerID) || $args["albumID"] == 0) {
             $content = contents::getContentFromAlbum($args["albumID"]);
-            if ($args["albumID"] > 0) {
-                $content->contentStatus = $data["contentStatus"];
-            } else {
-                $content->contentStatus = 1;
-                $content->isOld = 0;
-            }
+            $content->contentStatus = 1;
+            $content->isOld = 0;
             $content->contentType = $data['contentType'];
             $content->contentSubTypeID = $data['contentSubTypeID'];
             $content->userID =  $userID;
@@ -276,7 +272,7 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
                     }
                     $track->djmixes = isset($trackData["djmixes"]) ? $trackData["djmixes"] : 0;
                     $track->avRating = isset($trackData["avRating"]) ? $trackData["avRating"] : 0;
-                    $track->status = 1 ;
+                    $track->status = 1;
                     $trackID = $track->save();
 
                     foreach ($trackData["trackArtists"] as $trackArtist) {
@@ -288,8 +284,8 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
                             $newArtist->name = $trackArtist['name'];
                             $newArtist->dateCreated = date('Y-m-d H:i:s');
                             $newArtist->createdBy = $userID;
-                            $newArtist->appleID=$trackArtist['appleID'];
-                            $newArtist->spotifyID=$trackArtist['spotifyID'];
+                            $newArtist->appleID = $trackArtist['appleID'];
+                            $newArtist->spotifyID = $trackArtist['spotifyID'];
                             $artistID = $newArtist->save();
                         }
 
@@ -303,7 +299,10 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
                         //}
                     }
                     if ($trackID > 0) {
-                        $albumsTracks = new albumsTracks($trackID);
+                        $sql = "delete from albumsTracks where albumID=" . $albumID;
+                        $album->executenonquery($sql, null, true);
+
+                        $albumsTracks = new albumsTracks();
                         $albumsTracks->albumID =  $albumID;
                         $albumsTracks->trackID = $trackID;
                         $albumsTracks->userID = $userID;
@@ -331,6 +330,26 @@ $app->post('/albums/save/{albumID}', function ($request, $response, $args) {
         $data = null;
     }
     $response->getBody()->write($data);
+    return $response->withHeader('Content-Type', 'application/json');
+})->add(new JwtMiddleware($secretKey));
+
+$app->get('/definitions/{tableName}/{fieldName}[/{fieldID}/{filter}]', function ($request, $response, $args) {
+    require_once dirname(dirname(__FILE__)) . "/BL/Tables/services.php";
+
+    $tableNames = ["genres", "country", "languages", "artistRoles"];
+    $btResponse = null;
+    if (in_array($args["tableName"], $tableNames)) {
+        $bt = new services();
+        $fieldID = isset($args["fieldID"]) ? $args["fieldID"] : "ID";
+        $filter = isset($args["filter"]) ? $args["filter"] : "0=0";
+        $filter =  str_replace('@', ' ', $filter);
+        $filter =  str_replace('!', '%', $filter);
+        $sql = "select " . $fieldID . "," . $bt->checkInjection($args["fieldName"]) . " from " . $bt->checkInjection($args["tableName"]) . " where " . $bt->checkInjection($filter) . " order by " . $bt->checkInjection($args["fieldName"]);
+        //echo $sql;
+        $btResult = $bt->executenonquery($sql, true);
+        $btResponse = checkNull($bt->toJson);
+    }
+    $response->getBody()->write($btResponse);
     return $response->withHeader('Content-Type', 'application/json');
 })->add(new JwtMiddleware($secretKey));
 
